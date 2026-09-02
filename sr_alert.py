@@ -135,6 +135,9 @@ def main():
         f"Touched={touched} ActiveState=({active_type}, {active_level})"
     )
 
+    # tentukan state akhir yang akan disimpan; default: tidak berubah dari sebelumnya
+    final_type, final_level = active_type, active_level
+
     if touched:
         level_type, level_price, touches = touched
         same_as_active = (
@@ -161,7 +164,7 @@ def main():
                 print("Notifikasi S/R terkirim.")
             except Exception as e:
                 print(f"Gagal mengirim notifikasi Telegram: {e}")
-            save_state(level_type, level_price)
+            final_type, final_level = level_type, level_price
         else:
             print("Masih di level aktif yang sama, tidak kirim ulang.")
     else:
@@ -170,8 +173,13 @@ def main():
         if active_level is not None:
             dist = abs(current_price - active_level) / current_price
             if dist >= RESET_PCT:
-                save_state(None, None)
+                final_type, final_level = None, None
                 print("Sudah menjauh dari level aktif, state direset.")
+
+    # selalu simpan state di akhir (walau tidak berubah) supaya file selalu
+    # ada untuk di-commit oleh workflow, mencegah "git add" gagal saat file
+    # belum pernah tercipta.
+    save_state(final_type, final_level)
 
 
 if __name__ == "__main__":
